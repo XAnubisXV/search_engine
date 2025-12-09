@@ -1,0 +1,260 @@
+{
+  "index_settings": {
+    "docstore_compression": "lz4",
+    "docstore_blocksize": 16384
+  },
+  "segments": [
+    {
+      "segment_id": "212d5799-7fd4-48e6-9fc6-c7a7eb6a34e8",
+      "max_doc": 300,
+      "deletes": null
+    }
+  ],
+  "schema": [
+    {
+      "name": "wikidata",
+      "type": "text",
+      "options": {
+        "indexing": {
+          "record": "position",
+          "fieldnorms": true,
+          "tokenizer": "default"
+        },
+        "stored": true,
+        "fast": false
+      }
+    },
+    {
+      "name": "url",
+      "type": "text",
+      "options": {
+        "indexing": {
+          "record": "position",
+          "fieldnorms": true,
+          "tokenizer": "default"
+        },
+        "stored": true,
+        "fast": false
+      }
+    },
+    {
+      "name": "title",
+      "type": "text",
+      "options": {
+        "indexing": {
+          "record": "position",
+          "fieldnorms": true,
+          "tokenizer": "en_stem"
+        },
+        "stored": true,
+        "fast": false
+      }
+    },
+    {
+      "name": "description",
+      "type": "text",
+      "options": {
+        "indexing": {
+          "record": "position",
+          "fieldnorms": true,
+          "tokenizer": "en_stem"
+        },
+        "stored": true,
+        "fast": false
+      }
+    },
+    {
+      "name": "image",
+      "type": "text",
+      "options": {
+        "indexing": {
+          "record": "position",
+          "fieldnorms": true,
+          "tokenizer": "default"
+        },
+        "stored": true,
+        "fast": false
+      }
+    },
+    {
+      "name": "locations",
+      "type": "text",
+      "options": {
+        "indexing": {
+          "record": "position",
+          "fieldnorms": true,
+          "tokenizer": "default"
+        },
+        "stored": true,
+        "fast": false
+      }
+    },
+    {
+      "name": "countries",
+      "type": "text",
+      "options": {
+        "indexing": {
+          "record": "position",
+          "fieldnorms": true,
+          "tokenizer": "default"
+        },
+        "stored": true,
+        "fast": false
+      }
+    },
+    {
+      "name": "genres",
+      "type": "text",
+      "options": {
+        "indexing": {
+          "record": "position",
+          "fieldnorms": true,
+          "tokenizer": "default"
+        },
+        "stored": true,
+        "fast": false
+      }
+    },
+    {
+      "name": "tmdb_overview",
+      "type": "text",
+      "options": {
+        "indexing": {
+          "record": "position",
+          "fieldnorms": true,
+          "tokenizer": "en_stem"
+        },
+        "stored": true,
+        "fast": false
+      }
+    },
+    {
+      "name": "tmdb_poster_path",
+      "type": "text",
+      "options": {
+        "indexing": {
+          "record": "position",
+          "fieldnorms": true,
+          "tokenizer": "default"
+        },
+        "stored": true,
+        "fast": false
+      }
+    },
+    {
+      "name": "trailer",
+      "type": "text",
+      "options": {
+        "indexing": {
+          "record": "position",
+          "fieldnorms": true,
+          "tokenizer": "default"
+        },
+        "stored": true,
+        "fast": false
+      }
+    },
+    {
+      "name": "id",
+      "type": "i64",
+      "options": {
+        "indexed": true,
+        "fieldnorms": false,
+        "fast": false,
+        "stored": true
+      }
+    },
+    {
+      "name": "follower",
+      "type": "i64",
+      "options": {
+        "indexed": false,
+        "fieldnorms": false,
+        "fast": true,
+        "stored": true
+      }
+    },
+    {
+      "name": "score",
+      "type": "i64",
+      "options": {
+        "indexed": false,
+        "fieldnorms": false,
+        "fast": true,
+        "stored": true
+      }
+    },
+    {
+      "name": "start",
+      "type": "i64",
+      "options": {
+        "indexed": false,
+        "fieldnorms": false,
+        "fast": true,
+        "stored": true
+      }
+    },
+    {
+      "name": "tmdb_genre_ids",
+      "type": "i64",
+      "options": {
+        "indexed": true,
+        "fieldnorms": false,
+        "fast": false,
+        "stored": true
+      }
+    },
+    {
+      "name": "tmdb_vote_count",
+      "type": "i64",
+      "options": {
+        "indexed": false,
+        "fieldnorms": false,
+        "fast": true,
+        "stored": true
+      }
+    },
+    {
+      "name": "tmdb_popularity",
+      "type": "f64",
+      "options": {
+        "indexed": false,
+        "fieldnorms": false,
+        "fast": true,
+        "stored": true
+      }
+    },
+    {
+      "name": "tmdb_vote_average",
+      "type": "f64",
+      "options": {
+        "indexed": false,
+        "fieldnorms": false,
+        "fast": true,
+        "stored": true
+      }
+    },
+    {
+      "name": "facet_locations",
+      "type": "facet",
+      "options": {
+        "stored": false
+      }
+    },
+    {
+      "name": "facet_countries",
+      "type": "facet",
+      "options": {
+        "stored": false
+      }
+    },
+    {
+      "name": "facet_genres",
+      "type": "facet",
+      "options": {
+        "stored": false
+      }
+    }
+  ],
+  "opstamp": 308
+}
