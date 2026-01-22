@@ -143,7 +143,7 @@ if q:
         u_q = index.parse_query(term, ["title"])  # uses en_stem for "title"
         boolean_parts.append((Occur.Must, u_q))
     boolean_query = Query.boolean_query(boolean_parts)
-    hits = searcher.search(boolean_query, 1).hits
+    hits = searcher.search(boolean_query, 7000).hits
 
     if not hits:
         st.warning("Keine Ergebnisse gefunden.")
