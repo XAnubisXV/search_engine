@@ -5,7 +5,7 @@
   },
   "segments": [
     {
-      "segment_id": "212d5799-7fd4-48e6-9fc6-c7a7eb6a34e8",
+      "segment_id": "5bff4952-6333-4e5a-8a11-59f5867e190d",
       "max_doc": 300,
       "deletes": null
     }
@@ -155,6 +155,32 @@
       }
     },
     {
+      "name": "actors",
+      "type": "text",
+      "options": {
+        "indexing": {
+          "record": "position",
+          "fieldnorms": true,
+          "tokenizer": "en_stem"
+        },
+        "stored": true,
+        "fast": false
+      }
+    },
+    {
+      "name": "writers",
+      "type": "text",
+      "options": {
+        "indexing": {
+          "record": "position",
+          "fieldnorms": true,
+          "tokenizer": "en_stem"
+        },
+        "stored": true,
+        "fast": false
+      }
+    },
+    {
       "name": "id",
       "type": "i64",
       "options": {
@@ -211,6 +237,26 @@
         "indexed": false,
         "fieldnorms": false,
         "fast": true,
+        "stored": true
+      }
+    },
+    {
+      "name": "is_based_on_book",
+      "type": "i64",
+      "options": {
+        "indexed": true,
+        "fieldnorms": false,
+        "fast": false,
+        "stored": true
+      }
+    },
+    {
+      "name": "is_true_story",
+      "type": "i64",
+      "options": {
+        "indexed": true,
+        "fieldnorms": false,
+        "fast": false,
         "stored": true
       }
     },
