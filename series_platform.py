@@ -15,6 +15,7 @@ FRAME_SRC = os.path.join(os.path.dirname(os.path.abspath(__file__)), "Frame.png"
 FRAME_DST = os.path.join(STATIC_DIR, "Frame.png")
 if os.path.exists(FRAME_SRC) and not os.path.exists(FRAME_DST):
     import shutil
+
     shutil.copy2(FRAME_SRC, FRAME_DST)
 
 WATCHLIST_FILE = "watchlist.json"
@@ -59,7 +60,6 @@ except:
     pass
 
 # --- SCROLL-POSITION WIEDERHERSTELLEN ---
-# JavaScript das die Scroll-Position wiederherstellt wenn scroll-Parameter vorhanden
 if scroll_pos and scroll_pos != "0":
     st.markdown(f"""
     <script>
@@ -71,8 +71,7 @@ if scroll_pos and scroll_pos != "0":
     </script>
     """, unsafe_allow_html=True)
 
-# --- SCROLL-POSITION SPEICHERN (fuer Card-Links) ---
-# JavaScript das bei jedem Klick auf eine Card die aktuelle Scroll-Position in den Link einbaut
+# --- SCROLL-POSITION SPEICHERN ---
 st.markdown("""
 <script>
 document.addEventListener('click', function(e) {
@@ -126,7 +125,7 @@ except Exception as e:
 @st.cache_data
 def get_filter_options(field_name):
     try:
-        # Limit auf 7000 erhöht für Filter
+        # Limit auf 7000 erhöht für Filter-Optionen
         hits = searcher.search(index.parse_query("*", ["title"]), 7000).hits
         found = set()
         for _, addr in hits:
@@ -157,7 +156,6 @@ with header:
     with c_search:
         if st.button("SUCHE & FILTER", key="btn_search", use_container_width=True):
             st.session_state.show_search = not st.session_state.show_search
-            # KEIN st.rerun() - verhindert Scroll nach oben
 
     with c_list:
         count = len(st.session_state.watchlist)
@@ -166,44 +164,37 @@ with header:
             st.query_params["view"] = "mylist"
             st.rerun()
 
-
-# --- 5. SUCH-POPUP (als Overlay gestyled per CSS) ---
+# --- 5. SUCH-POPUP ---
 if st.session_state.show_search and view != "detail" and view != "mylist":
 
-    # Overlay-Hintergrund
     st.markdown('<div class="popup-overlay"></div>', unsafe_allow_html=True)
-
-    # Popup-Container oeffnen
     st.markdown('<div class="popup-box">', unsafe_allow_html=True)
     st.markdown('<div class="popup-title">SUCHE & FILTER</div>', unsafe_allow_html=True)
 
     with st.form("search_form"):
 
-        # Titelsuche
         search_query = st.text_input(
             "Wonach suchst du?",
             value=q_param,
             placeholder="z.B. Breaking Bad, Action, ein Schauspieler..."
         )
 
-        # Filteroptionen laden
         db_genres = get_filter_options("genres")
-        db_providers = get_filter_options("providers")
+
+        # Sicherstellen dass wichtige Genres immer dabei sind
         if len(db_genres) < 5:
-            db_genres = ["Drama", "Komoedie", "Action", "Thriller", "Krimi", "Science-Fiction", "Fantasy", "Animiert", "Gezeichnet"]
-        # Sicherstellen dass Fantasy, Animiert und Gezeichnet immer in der Liste sind
+            db_genres = ["Drama", "Komoedie", "Action", "Thriller", "Krimi", "Science-Fiction", "Fantasy", "Animiert",
+                         "Gezeichnet"]
         for extra_genre in ["Fantasy", "Animiert", "Gezeichnet"]:
             if extra_genre not in db_genres:
                 db_genres.append(extra_genre)
         db_genres = sorted(db_genres)
 
-        if len(db_providers) < 2:
-            # HIER WURDE DIE LISTE BEREINIGT
-            db_providers = [
-                "Netflix", "Disney+", "Apple TV+", "Sky", "WOW", "RTL+", "Hulu"
-            ]
+        # HIER: Bereinigte Liste der Anbieter (Nur die funktionierenden)
+        db_providers = [
+            "Netflix", "Disney+", "Apple TV+", "Sky", "WOW", "RTL+", "Hulu"
+        ]
 
-        # Genre + Plattform + Sortierung (3 Spalten)
         c1, c2, c3 = st.columns(3)
 
         sel_genres = c1.multiselect(
@@ -221,7 +212,6 @@ if st.session_state.show_search and view != "detail" and view != "mylist":
             ["Beliebtheit", "Bewertung (Top Rated)", "Kritiker-Score", "Neuerscheinungen"]
         )
 
-        # Spezialfilter
         cc1, cc2 = st.columns(2)
         is_true = cc1.checkbox(
             "Wahre Geschichte",
@@ -232,30 +222,22 @@ if st.session_state.show_search and view != "detail" and view != "mylist":
             value=True if qp.get("book") == "1" else False
         )
 
-        # Button
         submitted = st.form_submit_button("ERGEBNISSE ANZEIGEN", use_container_width=True)
 
         if submitted:
             p = {"view": "grid"}
-            if search_query:
-                p["q"] = search_query
-            if sel_genres:
-                p["genres"] = ",".join(sel_genres)
-            if sel_provs:
-                p["providers"] = ",".join(sel_provs)
-            if is_true:
-                p["true_story"] = "1"
-            if is_book:
-                p["book"] = "1"
+            if search_query: p["q"] = search_query
+            if sel_genres: p["genres"] = ",".join(sel_genres)
+            if sel_provs: p["providers"] = ",".join(sel_provs)
+            if is_true: p["true_story"] = "1"
+            if is_book: p["book"] = "1"
             p["sort"] = sort_opt
             st.session_state.show_search = False
             st.query_params.clear()
             st.query_params.update(p)
             st.rerun()
 
-    # Popup-Container schliessen
     st.markdown('</div>', unsafe_allow_html=True)
-
 
 # --- 6. INHALT ---
 
@@ -313,23 +295,12 @@ if view == "detail":
                     st.video(f"https://www.youtube.com/watch?v={doc['trailer'][0]}")
                 st.markdown("<br>", unsafe_allow_html=True)
 
-                # Zurueck-Button: scroll-Position aus URL uebernehmen
                 back_scroll = qp.get("scroll", "0")
                 if st.button("ZURUECK ZUR UEBERSICHT"):
                     new_params = {"view": "grid", "scroll": back_scroll}
-                    # Suchparameter beibehalten
-                    if qp.get("q"):
-                        new_params["q"] = qp.get("q")
-                    if qp.get("genres"):
-                        new_params["genres"] = qp.get("genres")
-                    if qp.get("providers"):
-                        new_params["providers"] = qp.get("providers")
-                    if qp.get("sort"):
-                        new_params["sort"] = qp.get("sort")
-                    if qp.get("true_story"):
-                        new_params["true_story"] = qp.get("true_story")
-                    if qp.get("book"):
-                        new_params["book"] = qp.get("book")
+                    # Parameter behalten
+                    for k in ["q", "genres", "providers", "sort", "true_story", "book"]:
+                        if qp.get(k): new_params[k] = qp.get(k)
                     st.query_params.clear()
                     st.query_params.update(new_params)
                     st.rerun()
@@ -340,7 +311,7 @@ elif view == "mylist":
         st.info("Du hast noch keine Serien auf deiner Liste.")
     else:
         q_str = " OR ".join([f"id:{wid}" for wid in st.session_state.watchlist])
-        # Limit für Watchlist auf 7000 erhöht
+        # Limit auf 7000 erhöht
         hits = searcher.search(index.parse_query(q_str, ["id"]), 7000).hits
         html = ['<div class="grid">']
         for _, addr in hits:
@@ -363,19 +334,43 @@ else:
         parts.append(
             (Occur.Must, index.parse_query(q_param, ["title", "actors", "description", "tmdb_overview"]))
         )
+
+    # HIER: Die verbesserte Genre-Logik (Animiert, Krimi, etc.)
     if qp.get("genres"):
         sub = []
         for g in qp.get("genres").split(","):
-            if g.strip() == "Gezeichnet":
-                # Gezeichnet = Animation, Zeichentrick, Anime, Animiert
+            clean_g = g.strip()
+
+            # FIX: Animiert/Gezeichnet
+            if clean_g in ["Gezeichnet", "Animiert"]:
                 sub.append((Occur.Should, index.parse_query('"Animation"', ["genres"])))
                 sub.append((Occur.Should, index.parse_query('"Zeichentrick"', ["genres"])))
                 sub.append((Occur.Should, index.parse_query('"Anime"', ["genres"])))
                 sub.append((Occur.Should, index.parse_query('"Animiert"', ["genres"])))
                 sub.append((Occur.Should, index.parse_query('"Animated"', ["genres"])))
+
+            # FIX: Krimi/Crime
+            elif clean_g == "Krimi":
+                sub.append((Occur.Should, index.parse_query('"Krimi"', ["genres"])))
+                sub.append((Occur.Should, index.parse_query('"Crime"', ["genres"])))
+                sub.append((Occur.Should, index.parse_query('"Police"', ["genres"])))
+
+            # FIX: Komödie/Comedy
+            elif clean_g in ["Komödie", "Komoedie"]:
+                sub.append((Occur.Should, index.parse_query('"Komödie"', ["genres"])))
+                sub.append((Occur.Should, index.parse_query('"Comedy"', ["genres"])))
+
+            # FIX: Sci-Fi
+            elif clean_g in ["Science-Fiction", "Sci-Fi"]:
+                sub.append((Occur.Should, index.parse_query('"Science-Fiction"', ["genres"])))
+                sub.append((Occur.Should, index.parse_query('"Sci-Fi"', ["genres"])))
+                sub.append((Occur.Should, index.parse_query('"Science Fiction"', ["genres"])))
+
             else:
-                sub.append((Occur.Should, index.parse_query(f'"{ g}"', ["genres"])))
+                sub.append((Occur.Should, index.parse_query(f'"{clean_g}"', ["genres"])))
+
         parts.append((Occur.Must, Query.boolean_query(sub)))
+
     if qp.get("providers"):
         sub = []
         for p in qp.get("providers").split(","):
@@ -387,8 +382,10 @@ else:
         parts.append((Occur.Must, index.parse_query("1", ["is_based_on_book"])))
 
     query = Query.boolean_query(parts) if parts else index.parse_query("*", ["title"])
-    # Limit für Grid-Ansicht auf 7000 erhöht
+
+    # HIER: Limit auf 7000 gesetzt
     hits = searcher.search(query, 7000).hits
+
     results = []
     for _, addr in hits:
         doc = searcher.doc(addr)
@@ -425,17 +422,10 @@ else:
         for r in results:
             img = TMDB_PATH_SMALL + r["poster"] if r["poster"] else "https://via.placeholder.com/200x300"
             href = f"?view=detail&id={r['id']}&q={up.quote(q_param, safe='')}"
-            # Suchparameter in Card-Links beibehalten
-            if qp.get("genres"):
-                href += f"&genres={up.quote(qp.get('genres'), safe='')}"
-            if qp.get("providers"):
-                href += f"&providers={up.quote(qp.get('providers'), safe='')}"
-            if qp.get("sort"):
-                href += f"&sort={up.quote(qp.get('sort'), safe='')}"
-            if qp.get("true_story"):
-                href += f"&true_story={qp.get('true_story')}"
-            if qp.get("book"):
-                href += f"&book={qp.get('book')}"
+            # Parameter beibehalten
+            for k in ["genres", "providers", "sort", "true_story", "book"]:
+                if qp.get(k): href += f"&{k}={up.quote(qp.get(k), safe='')}"
+
             label = f"Score: {r['score']}" if sort_k == "Kritiker-Score" and r["score"] > 0 else f"{r['rate']:.1f}"
             html.append(
                 f"""<a class="card" href="{href}" target="_self">"""
