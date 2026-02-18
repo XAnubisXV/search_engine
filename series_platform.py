@@ -126,7 +126,7 @@ except Exception as e:
 @st.cache_data
 def get_filter_options(field_name):
     try:
-        # HIER: Limit für Filter-Optionen auf 7000 erhöht (war 5000)
+        # Limit auf 7000 erhöht für Filter
         hits = searcher.search(index.parse_query("*", ["title"]), 7000).hits
         found = set()
         for _, addr in hits:
@@ -198,12 +198,9 @@ if st.session_state.show_search and view != "detail" and view != "mylist":
         db_genres = sorted(db_genres)
 
         if len(db_providers) < 2:
+            # HIER WURDE DIE LISTE BEREINIGT
             db_providers = [
-                "Netflix", "Amazon Prime Video", "Disney+", "Apple TV+",
-                "Sky", "WOW", "Paramount+", "RTL+", "Joyn", "Joyn Plus+",
-                "MagentaTV", "Crunchyroll", "ARD Mediathek", "ZDF Mediathek",
-                "Amazon Freevee", "Hulu", "HBO Max", "Peacock",
-                "Starz", "MUBI", "Curiosity Stream"
+                "Netflix", "Disney+", "Apple TV+", "Sky", "WOW", "RTL+", "Hulu"
             ]
 
         # Genre + Plattform + Sortierung (3 Spalten)
@@ -343,7 +340,7 @@ elif view == "mylist":
         st.info("Du hast noch keine Serien auf deiner Liste.")
     else:
         q_str = " OR ".join([f"id:{wid}" for wid in st.session_state.watchlist])
-        # HIER: Limit für Watchlist auf 7000 erhöht (war 100)
+        # Limit für Watchlist auf 7000 erhöht
         hits = searcher.search(index.parse_query(q_str, ["id"]), 7000).hits
         html = ['<div class="grid">']
         for _, addr in hits:
@@ -390,7 +387,7 @@ else:
         parts.append((Occur.Must, index.parse_query("1", ["is_based_on_book"])))
 
     query = Query.boolean_query(parts) if parts else index.parse_query("*", ["title"])
-    # HIER: Limit für Grid-Ansicht auf 7000 erhöht (war 300)
+    # Limit für Grid-Ansicht auf 7000 erhöht
     hits = searcher.search(query, 7000).hits
     results = []
     for _, addr in hits:
