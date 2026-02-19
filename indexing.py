@@ -3,12 +3,12 @@ import wikipediaapi
 import re
 from urllib.parse import urlparse, unquote, quote
 from tantivy import Facet, SchemaBuilder, Index, Document
+from itertools import islice
 import json
 import requests
 import os
 from dotenv import load_dotenv
 import trailer
-import random
 import time
 
 # --- CONFIG ---
@@ -81,8 +81,80 @@ GENRE_MAP = {
     "Action": "Action", "Drama": "Drama", "Crime": "Krimi", "Adventure": "Abenteuer",
     "Thriller": "Thriller", "Animation": "Animation", "Family": "Familie", "Mystery": "Mystery",
     "Documentary": "Dokumentation", "Romance": "Romantik", "Fantasy": "Fantasy",
-    "War": "Krieg", "Western": "Western", "Horror": "Horror", "Music": "Musik", "Reality": "Reality-TV"
+    "War": "Krieg", "Western": "Western", "Horror": "Horror", "Music": "Musik", "Reality": "Reality-TV",
+    "History": "Historisch", "Talk": "Stand-Up"
 }
+
+# Mapping: TMDB Provider-Namen auf unsere einheitlichen Namen
+PROVIDER_NAME_MAP = {
+    "Netflix": "Netflix",
+    "Netflix basic with Ads": "Netflix",
+    "Amazon Prime Video": "Amazon Prime",
+    "Amazon Video": "Amazon Prime",
+    "Disney Plus": "Disney+",
+    "Disney+": "Disney+",
+    "Paramount Plus": "Paramount+",
+    "Paramount+ Amazon Channel": "Paramount+",
+    "Paramount Plus Apple TV Channel": "Paramount+",
+    "HBO Max": "HBO Max",
+    "Max": "HBO Max",
+    "Max Amazon Channel": "HBO Max",
+    "Apple TV Plus": "Apple TV+",
+    "Apple TV+": "Apple TV+",
+    "WOW": "WOW",
+    "Sky Go": "WOW",
+    "Sky Ticket": "WOW",
+    "Joyn": "Joyn",
+    "Joyn Plus": "Joyn",
+    "RTL+": "RTL+",
+    "RTL Plus": "RTL+",
+    "Amazon Freevee": "Amazon Freevee",
+    "Freevee": "Amazon Freevee",
+    "Crunchyroll": "Crunchyroll",
+    "MagentaTV": "MagentaTV",
+    "ARD Mediathek": "ARD Mediathek",
+    "ZDF": "ZDF Mediathek",
+    "ZDF Mediathek": "ZDF Mediathek",
+    "Hulu": "Hulu",
+}
+
+
+def get_watch_providers_de(tmdb_id):
+    """Holt die echten Streaming-Plattformen fuer Deutschland von der TMDB API."""
+    providers_found = set()
+    try:
+        url = f"{TMDB_DETAILS_API}{tmdb_id}/watch/providers"
+        resp = requests.get(url, headers=headers)
+        data_wp = resp.json()
+
+        de_data = data_wp.get("results", {}).get("DE", {})
+
+        # flatrate = Streaming-Abo (Netflix, Disney+ etc.)
+        for p in de_data.get("flatrate", []):
+            name = p.get("provider_name", "")
+            mapped = PROVIDER_NAME_MAP.get(name)
+            if mapped:
+                providers_found.add(mapped)
+
+        # ads = Kostenlos mit Werbung (Freevee, Joyn etc.)
+        for p in de_data.get("ads", []):
+            name = p.get("provider_name", "")
+            mapped = PROVIDER_NAME_MAP.get(name)
+            if mapped:
+                providers_found.add(mapped)
+
+        # free = Komplett kostenlos (ARD, ZDF etc.)
+        for p in de_data.get("free", []):
+            name = p.get("provider_name", "")
+            mapped = PROVIDER_NAME_MAP.get(name)
+            if mapped:
+                providers_found.add(mapped)
+
+    except Exception as e:
+        print(f"  Watch Providers Fehler: {e}")
+
+    return list(providers_found)
+
 
 # DATEN LADEN
 print("Lade CSV Dateien...")
@@ -110,14 +182,12 @@ def check_keywords(text, keywords):
     return 0
 
 
-POSSIBLE_PROVIDERS = ["Netflix", "Amazon Prime", "Disney+", "Hulu", "Apple TV+", "Sky/Wow", "RTL+"]
-
-# --- HIER WURDE DAS LIMIT ENTFERNT ---
-print(f"Starte Indexierung von ALLEN {len(data)} Serien...")
+# --- LIMIT: Maximale Anzahl der zu indexierenden Serien ---
+LIMIT = 7000
+print(f"Starte Indexierung von {LIMIT} Serien...")
 count = 0
 
-# HIER WURDE islice() ENTFERNT, DAMIT ALLES DURCHLÄUFT
-for index, row in data.iterrows():
+for idx, row in islice(data.iterrows(), LIMIT):
     try:
         path = urlparse(row["wikipediaPage"]).path
         title = unquote(path.split("/")[-1]).replace("_", " ")
@@ -125,7 +195,7 @@ for index, row in data.iterrows():
         description = page.summary if page.exists() else ""
 
         doc = Document()
-        doc.add_integer("id", index)
+        doc.add_integer("id", idx)
         doc.add_text("wikidata", row["series"])
         doc.add_text("url", row["wikipediaPage"])
         doc.add_text("title", row["seriesLabel"])
@@ -148,12 +218,6 @@ for index, row in data.iterrows():
                 g_german = GENRE_MAP.get(g_clean, g_clean)
                 doc.add_text("genres", g_german)
                 doc.add_facet("facet_genres", Facet.from_string(f"/{g_german.replace('/', ' ')}"))
-
-        # Plattform
-        my_providers = random.sample(POSSIBLE_PROVIDERS, k=random.randint(1, 3))
-        for prov in my_providers:
-            doc.add_text("providers", prov)
-            doc.add_facet("facet_providers", Facet.from_string(f"/{prov}"))
 
         # TMDB
         try:
@@ -189,11 +253,25 @@ for index, row in data.iterrows():
                                                                 ["wahre begebenheit", "true story", "biografie",
                                                                  "biography"]))
 
+                # --- ECHTE PLATTFORMEN VON TMDB HOLEN ---
                 if tmdb_id:
                     time.sleep(0.05)
+
+                    # Watch Providers fuer Deutschland
+                    real_providers = get_watch_providers_de(tmdb_id)
+                    for prov in real_providers:
+                        doc.add_text("providers", prov)
+                        doc.add_facet("facet_providers", Facet.from_string(f"/{prov}"))
+
+                    if real_providers:
+                        print(f"  [{row['seriesLabel']}] Plattformen: {', '.join(real_providers)}")
+
+                    # Credits (Schauspieler)
                     c = requests.get(f"{TMDB_DETAILS_API}{tmdb_id}/credits", headers=headers).json()
                     for cast in c.get('cast', [])[:5]:
                         doc.add_text("actors", cast['name'])
+
+                    # Trailer
                     v = requests.get(f"{TMDB_DETAILS_API}{tmdb_id}/videos?language=de-DE", headers=headers)
                     res_v = v.json()
                     if not res_v.get('results'):
@@ -201,15 +279,15 @@ for index, row in data.iterrows():
                     key = trailer.get_key(v.text)
                     if isinstance(key, str):
                         doc.add_text("trailer", key)
-        except:
-            pass
+        except Exception as e:
+            print(f"  TMDB Fehler fuer {row['seriesLabel']}: {e}")
 
         writer.add_document(doc)
         count += 1
         if count % 20 == 0: print(f"{count} Serien verarbeitet...")
 
     except Exception as e:
-        print(f"Fehler Zeile {index}: {e}")
+        print(f"Fehler Zeile {idx}: {e}")
 
 writer.commit()
 writer.wait_merging_threads()
